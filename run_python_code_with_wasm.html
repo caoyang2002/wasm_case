@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python in Browser</title>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.20.0/full/pyodide.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: flex;
+            flex-grow: 1;
+        }
+        #input, #output {
+            width: 50%;
+            height: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        #input {
+            resize: none;
+            border: none;
+            border-right: 1px solid #ccc;
+        }
+        #output {
+            background-color: #f0f0f0;
+            overflow-y: auto;
+        }
+        #runButton {
+            padding: 10px;
+            margin: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <button id="runButton">Run Python Code</button>
+    <div class="container">
+        <textarea id="input" placeholder="Enter Python code here..."></textarea>
+        <div id="output"></div>
+    </div>
+
+    <script>
+        let pyodide;
+
+        async function main() {
+            pyodide = await loadPyodide({
+                indexURL: "https://cdn.jsdelivr.net/pyodide/v0.20.0/full/"
+            });
+            
+            document.getElementById('runButton').addEventListener('click', runPython);
+        }
+
+        async function runPython() {
+            const code = document.getElementById('input').value;
+            const outputDiv = document.getElementById('output');
+
+            try {
+                // 设置 Python 打印函数以捕获输出
+                await pyodide.runPythonAsync(`
+                    import sys
+                    import io
+                    sys.stdout = io.StringIO()
+                `);
+
+                // 运行用户的 Python 代码
+                const result = await pyodide.runPythonAsync(code);
+
+                // 获取打印输出
+                const stdout = await pyodide.runPythonAsync("sys.stdout.getvalue()");
+
+                // 组合结果
+                let output = stdout;
+                if (result !== undefined) {
+                    output += "\nReturn value: " + result;
+                }
+
+                outputDiv.innerHTML = `<pre>${output}</pre>`;
+            } catch (error) {
+                outputDiv.innerHTML = `<pre style="color: red;">${error}</pre>`;
+            }
+        }
+
+        main();
+    </script>
+</body>
+</html>
